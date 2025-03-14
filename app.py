@@ -1,24 +1,25 @@
 from flask import Flask, request
 from flask_socketio import SocketIO
 from flask_cors import CORS
-import os
+import importlib
+
+from user1 import bp as user1_bp, register_socketio_handlers as register_user1_handlers
+from user2 import bp as user2_bp, register_socketio_handlers as register_user2_handlers
+from user3 import bp as user3_bp, register_socketio_handlers as register_user3_handlers
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Secure this in production
+app.secret_key = 'your_secret_key'
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Dynamically register blueprints from the 'blueprints' folder
-def register_blueprints(app):
-    blueprint_dir = os.path.join(os.path.dirname(__file__), 'blueprints')
-    for filename in os.listdir(blueprint_dir):
-        if filename.endswith('.py') and filename != '__init__.py':
-            module_name = f"blueprints.{filename[:-3]}"  # Remove .py
-            module = __import__(module_name, fromlist=['bp'])
-            app.register_blueprint(module.bp)
-            print(f"Registered blueprint: {module_name}")
+app.register_blueprint(user1_bp)
+app.register_blueprint(user2_bp)
+app.register_blueprint(user3_bp)
 
-# SocketIO event to handle global connection
+register_user1_handlers(socketio)
+register_user2_handlers(socketio)
+register_user3_handlers(socketio)
+
 @socketio.on('connect')
 def handle_connect():
     print(f"Client connected: {request.sid}")
@@ -28,5 +29,4 @@ def handle_disconnect():
     print(f"Client disconnected: {request.sid}")
 
 if __name__ == '__main__':
-    register_blueprints(app)
     socketio.run(app, host='localhost', port=5000, debug=True)
